@@ -17,7 +17,10 @@
   },
   "homepage": "https://github.com/Ado4007/machmit-backend#readme",
   "dependencies": {
+    "cassandra-driver": "^4.6.1",
+    "cors": "^2.8.5",
     "express": "^4.17.1",
-    "express-generator": "^4.16.1"
+    "express-generator": "^4.16.1",
+    "mysql": "^2.18.1"
   }
 }
