@@ -2,8 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql');
 const fetch = require('node-fetch');
+const db = require('mysql-promise')();
 
-const connection = mysql.createConnection({
+db.configure({
 	host: 'localhost',
 	user: 'machmit',
 	password: 'um2UWTSDvzFWAkYiPPtf',
@@ -14,16 +15,24 @@ const settings = { method: "Get" };
 
 const app = express();
 app.use(cors());
-connection.connect();
 
 app.get('/projects', (req, res) => {
 	console.log('som kokot');
-	connection.query('SELECT id,name,description,litecoin_address,image FROM projects', (err, rows, fields) => {
+	db.query('SELECT id,name,description,litecoin_address,image FROM projects p', async (err, rows, fields) => {
 		if (err) {
 			console.log(err);
 			return;
 		}
-		fetch(statusURL, settings).then(res => res.json()).then((json) => {});
+		for (let project of rows) {
+			let resp = await fetch(statusURL + '/' + project['litecoin_address']  + '/balance', settings);
+	                resp = await resp.json();
+        	        project.votes = resp.final_balance/1000;
+	                console.log("processed");
+			await db.query('SELECT name, text FROM comments WHERE project_id = ?', [project['id']], (err, rows, fields) => {
+			if (err) {console.log(err); return;}
+				project.comments = rows;
+			});
+		}
 		console.log("processed");
 		res.json({projects: rows});
 	});
@@ -32,15 +41,18 @@ app.get('/projects', (req, res) => {
 
 app.get('/projects/:id', (req, res) => {
 	console.log('som kokot');
-        connection.query('SELECT id,name,description,litecoin_address,image FROM projects WHERE id=?', [req.params.id], (err, rows, fields) => {
+        db.query('SELECT id,name,description,litecoin_address,image FROM projects WHERE id=?', [req.params.id], async (err, rows, fields) => {
                 if (err) {
                         console.log(err);
                         return;
                 }
 		let project = rows[0];
-		console.log(typeof project);
-		fetch(statusURLi + '/' + project['litecoin_address']  + '/balance', settings).then(res => res.json()).then((json) => {console.log(json)});
+		//console.log(project);
+		let resp = await fetch(statusURL + '/' + project['litecoin_address']  + '/balance', settings);
+		resp = await resp.json();
+		project.votes = resp.final_balance/1000;
                 console.log("processed");
+//		console.log(project)
                 res.json({project: project});
         });
 });
